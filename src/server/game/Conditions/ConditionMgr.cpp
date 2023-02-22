@@ -149,9 +149,18 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
 {
     ASSERT(ConditionTarget < MAX_CONDITION_TARGETS);
 
-    Map const* map = sourceInfo.mConditionMap;
     bool condMeets = false;
-    bool needsObject = false;
+    
+    WorldObject* object = sourceInfo.mConditionTargets[ConditionTarget];
+    // object not present, return false
+    if (!object)
+    {
+        TC_LOG_DEBUG("condition", "Condition object not found for condition (Entry: %u Type: %u Group: %u)", SourceEntry, SourceType, SourceGroup);
+        return false;
+    }
+
+    Map const* map = sourceInfo.mConditionMap ? sourceInfo.mConditionMap : object->GetMap();
+
     switch (ConditionType)
     {
         case CONDITION_NONE:
@@ -162,7 +171,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             break;
         case CONDITION_INSTANCE_INFO:
         {
-            if (map->IsDungeon())
+            if (map && map->IsDungeon())
             {
                 if (InstanceScript const* instance = ((InstanceMap*)map)->GetInstanceScript())
                 {
@@ -189,11 +198,11 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             break;
         }
         case CONDITION_MAPID:
-            condMeets = map->GetId() == ConditionValue1;
+            condMeets = map && map->GetId() == ConditionValue1;
             break;
         case CONDITION_WORLD_STATE:
         {
-            condMeets = sWorldStateMgr->GetValue(ConditionValue1, map) == int32(ConditionValue2);
+            condMeets = map && sWorldStateMgr->GetValue(ConditionValue1, map) == int32(ConditionValue2);
             break;
         }
         case CONDITION_REALM_ACHIEVEMENT:
@@ -203,20 +212,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
                 condMeets = true;
             break;
         }
-        default:
-            needsObject = true;
-            break;
-    }
-
-    WorldObject* object = sourceInfo.mConditionTargets[ConditionTarget];
-    // object not present, return false
-    if (needsObject && !object)
-    {
-        TC_LOG_DEBUG("condition", "Condition object not found for %s", ToString().c_str());
-        return false;
-    }
-    switch (ConditionType)
-    {
+        
         case CONDITION_AURA:
         {
             if (Unit* unit = object->ToUnit())
@@ -468,7 +464,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
         }
         case CONDITION_SPAWNMASK:
         {
-            condMeets = ((1 << object->GetMap()->GetSpawnMode()) & ConditionValue1) != 0;
+            condMeets = map && ((1 << map->GetSpawnMode()) & ConditionValue1) != 0;
             break;
         }
         case CONDITION_UNIT_STATE:
