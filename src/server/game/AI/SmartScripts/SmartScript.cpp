@@ -274,11 +274,11 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 }
             }
 
-            if (!talkTarget)
-                talkTarget = GetLastInvoker();
-
             if (!talker)
                 break;
+
+            if (!talkTarget)
+                talkTarget = GetLastInvoker() ? GetLastInvoker() : talker->GetOwner();
 
             mTalkerEntry = talker->GetEntry();
             mLastTextID = e.action.talk.textGroupID;
