@@ -1,0 +1,4 @@
+ -- Generic Bunny spawns for Proving Pit quest
+ INSERT INTO `creature` (`guid`, `id`, `map`, `zoneId`, `areaId`, `spawnMask`, `phaseUseFlags`, `phaseMask`, `PhaseId`, `PhaseGroup`, `terrainSwapMap`, `modelid`, `equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `wander_distance`, `currentwaypoint`, `curhealth`, `curmana`, `MovementType`, `npcflag`, `unit_flags`, `dynamicflags`, `ScriptName`, `VerifiedBuild`) VALUES
+ ('396798', '52426', '1', '0', '0', '1', '0', '1', '169', '0', '-1', '0', '0', '-1148.28', '-5418.1', '10.5985', '0.0153339', '300', '0', '0', '42', '0', '0', '0', '0', '0', NULL, '0'),
+ ('396799', '52426', '1', '0', '0', '1', '0', '1', '169', '0', '-1', '0', '0', '-1147.94', '-5530.9', '8.10515', '3.05874', '300', '0', '0', '42', '0', '0', '0', '0', '0', NULL, '0');
