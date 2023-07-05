@@ -818,7 +818,24 @@ void Spell::CalculateJumpSpeeds(uint8 i, float dist, float & speedXY, float & sp
     speedZ = std::sqrt(2 * Movement::gravity * height);
 }
 
-void Spell::EffectTeleportUnits(SpellEffIndex /*effIndex*/)
+TeleportToOptions GetTeleportOptions(WorldObject const* caster, Unit const* unitTarget, SpellDestination const& targetDest)
+{
+    TeleportToOptions options = TELE_TO_NONE;
+    if (caster == unitTarget)
+        options |= TELE_TO_SPELL;
+
+    if (targetDest._position.GetMapId() == unitTarget->GetMapId())
+    {
+        options |= TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET;
+
+        if (unitTarget->GetTransGUID() == targetDest._transportGUID)
+            options |= TELE_TO_NOT_LEAVE_TRANSPORT;
+    }
+
+    return options;
+}
+
+void Spell::EffectTeleportUnits(SpellEffIndex effIndex)
 {
     if (effectHandleMode != SPELL_EFFECT_HANDLE_HIT_TARGET)
         return;
@@ -841,15 +858,18 @@ void Spell::EffectTeleportUnits(SpellEffIndex /*effIndex*/)
     if (!targetDest.GetOrientation() && m_targets.GetUnitTarget())
         targetDest.SetOrientation(m_targets.GetUnitTarget()->GetOrientation());
 
-    if (targetDest.GetMapId() == unitTarget->GetMapId())
-        unitTarget->NearTeleportTo(targetDest, unitTarget == m_caster);
-    else if (unitTarget->GetTypeId() == TYPEID_PLAYER)
-        unitTarget->ToPlayer()->TeleportTo(targetDest, unitTarget == m_caster ? TELE_TO_SPELL : 0);
-    else
+    Player* player = unitTarget->ToPlayer();
+
+    if (player)
     {
-        TC_LOG_ERROR("spells", "Spell::EffectTeleportUnits - spellId %u attempted to teleport creature to a different map.", m_spellInfo->Id);
-        return;
+        TeleportToOptions options = GetTeleportOptions(m_caster, unitTarget, m_destTargets[effIndex]);
+
+        player->TeleportTo(targetDest, options);
     }
+    else if (targetDest.GetMapId() == unitTarget->GetMapId())
+        unitTarget->NearTeleportTo(targetDest, unitTarget == m_caster);
+    else
+        TC_LOG_ERROR("spells", "Spell::EffectTeleportUnits - spellId %u attempted to teleport creature to a different map.", m_spellInfo->Id);
 
     // post effects for TARGET_DEST_DB
     /// @todo: awful hacks, move this to spellscripts
@@ -3999,18 +4019,16 @@ void Spell::EffectInebriate(SpellEffIndex /*effIndex*/)
         return;
 
     Player* player = unitTarget->ToPlayer();
-    uint8 currentDrunk = player->GetDrunkValue();
-    uint8 drunkMod = damage;
-    if (currentDrunk + drunkMod > 100)
+
+    uint8 currentDrunkValue = player->GetDrunkValue();
+    uint8 drunkValue = std::clamp<int32>(damage + currentDrunkValue, 0, 100);
+    if (currentDrunkValue == 100 && currentDrunkValue == drunkValue)
     {
-        currentDrunk = 100;
-        if (rand_chance() < 25.0f)
+        if (roll_chance_f(25.0f))
             player->CastSpell(player, 67468, false);    // Drunken Vomit
     }
-    else
-        currentDrunk += drunkMod;
 
-    player->SetDrunkValue(currentDrunk, m_CastItem ? m_CastItem->GetEntry() : 0);
+    player->SetDrunkValue(drunkValue, m_CastItem ? m_CastItem->GetEntry() : 0);
 }
 
 void Spell::EffectFeedPet(SpellEffIndex effIndex)
