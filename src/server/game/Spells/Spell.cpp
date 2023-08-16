@@ -825,8 +825,8 @@ void Spell::SelectSpellTargets()
         if (implicitTargetMask & (TARGET_FLAG_GAMEOBJECT | TARGET_FLAG_GAMEOBJECT_ITEM))
             m_targets.SetTargetFlag(TARGET_FLAG_GAMEOBJECT);
 
-        SelectEffectImplicitTargets(SpellEffIndex(i), m_spellInfo->Effects[i].TargetA, processedAreaEffectsMask);
-        SelectEffectImplicitTargets(SpellEffIndex(i), m_spellInfo->Effects[i].TargetB, processedAreaEffectsMask);
+        SelectEffectImplicitTargets(SpellEffIndex(i), m_spellInfo->Effects[i].TargetA, SpellTargetIndex::TargetA, processedAreaEffectsMask);
+        SelectEffectImplicitTargets(SpellEffIndex(i), m_spellInfo->Effects[i].TargetB, SpellTargetIndex::TargetB, processedAreaEffectsMask);
 
         // Select targets of effect based on effect type
         // those are used when no valid target could be added for spell effect based on spell target type
@@ -950,7 +950,7 @@ void Spell::RecalculateDelayMomentForDst()
     m_caster->m_Events.ModifyEventTime(_spellEvent, GetDelayStart() + m_delayMoment);
 }
 
-void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, uint32& processedEffectMask)
+void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, SpellTargetIndex targetIndex, uint32& processedEffectMask)
 {
     if (!targetType.GetTarget())
         return;
@@ -974,7 +974,8 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
                     effects[effIndex].TargetA.GetTarget() == effects[j].TargetA.GetTarget() &&
                     effects[effIndex].TargetB.GetTarget() == effects[j].TargetB.GetTarget() &&
                     effects[effIndex].ImplicitTargetConditions == effects[j].ImplicitTargetConditions &&
-                    effects[effIndex].CalcRadius(m_caster) == effects[j].CalcRadius(m_caster) &&
+                    effects[effIndex].CalcRadius(m_caster, SpellTargetIndex::TargetA) == effects[j].CalcRadius(m_caster, SpellTargetIndex::TargetA) &&
+                    effects[effIndex].CalcRadius(m_caster, SpellTargetIndex::TargetB) == effects[j].CalcRadius(m_caster, SpellTargetIndex::TargetB) &&
                     CheckScriptEffectImplicitTargets(effIndex, j))
                 {
                     effectMask |= 1 << j;
@@ -992,13 +993,13 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
             SelectImplicitChannelTargets(effIndex, targetType);
             break;
         case TARGET_SELECT_CATEGORY_NEARBY:
-            SelectImplicitNearbyTargets(effIndex, targetType, effectMask);
+            SelectImplicitNearbyTargets(effIndex, targetType, targetIndex, effectMask);
             break;
         case TARGET_SELECT_CATEGORY_CONE:
-            SelectImplicitConeTargets(effIndex, targetType, effectMask);
+            SelectImplicitConeTargets(effIndex, targetType, targetIndex, effectMask);
             break;
         case TARGET_SELECT_CATEGORY_AREA:
-            SelectImplicitAreaTargets(effIndex, targetType, effectMask);
+            SelectImplicitAreaTargets(effIndex, targetType, targetIndex,effectMask);
             break;
         case TARGET_SELECT_CATEGORY_TRAJ:
             // just in case there is no dest, explanation in SelectImplicitDestDestTargets
@@ -1024,13 +1025,13 @@ void Spell::SelectEffectImplicitTargets(SpellEffIndex effIndex, SpellImplicitTar
                      switch (targetType.GetReferenceType())
                      {
                          case TARGET_REFERENCE_TYPE_CASTER:
-                             SelectImplicitCasterDestTargets(effIndex, targetType);
+                             SelectImplicitCasterDestTargets(effIndex, targetType, targetIndex);
                              break;
                          case TARGET_REFERENCE_TYPE_TARGET:
-                             SelectImplicitTargetDestTargets(effIndex, targetType);
+                             SelectImplicitTargetDestTargets(effIndex, targetType, targetIndex);
                              break;
                          case TARGET_REFERENCE_TYPE_DEST:
-                             SelectImplicitDestDestTargets(effIndex, targetType);
+                             SelectImplicitDestDestTargets(effIndex, targetType, targetIndex);
                              break;
                          default:
                              ASSERT(false && "Spell::SelectEffectImplicitTargets: received not implemented select target reference type for TARGET_TYPE_OBJECT_DEST");
@@ -1118,7 +1119,7 @@ void Spell::SelectImplicitChannelTargets(SpellEffIndex effIndex, SpellImplicitTa
     }
 }
 
-void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, uint32 effMask)
+void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, [[maybe_unused]] SpellTargetIndex targetIndex, uint32 effMask)
 {
     if (targetType.GetReferenceType() != TARGET_REFERENCE_TYPE_CASTER)
     {
@@ -1258,7 +1259,7 @@ void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTar
     SelectImplicitChainTargets(effIndex, targetType, target, effMask);
 }
 
-void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, uint32 effMask)
+void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, SpellTargetIndex targetIndex, uint32 effMask)
 {
     Position coneSrc(*m_caster);
     float coneAngle = m_spellInfo->ConeAngle;
@@ -1289,7 +1290,7 @@ void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTarge
     SpellTargetCheckTypes selectionType = targetType.GetCheckType();
     ConditionContainer* condList = m_spellInfo->Effects[effIndex].ImplicitTargetConditions;
 
-    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster);
+    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster, targetIndex);
     // Workaround for some spells that don't have RadiusEntry set in dbc (but SpellRange instead)
     if (G3D::fuzzyEq(radius, 0.f))
         radius = m_spellInfo->GetMaxRange(m_spellInfo->IsPositiveEffect(effIndex), m_caster, this);
@@ -1323,7 +1324,7 @@ void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTarge
     }
 }
 
-void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, uint32 effMask)
+void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, SpellTargetIndex targetIndex, uint32 effMask)
 {
     WorldObject* referer = nullptr;
     switch (targetType.GetReferenceType())
@@ -1376,7 +1377,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
              return;
     }
 
-    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster);
+    float radius = m_spellInfo->Effects[effIndex].CalcRadius(m_caster, targetIndex);
 
     // Workaround for some spells that don't have RadiusEntry set in dbc (but SpellRange instead)
     if (G3D::fuzzyEq(radius, 0.f))
@@ -1433,7 +1434,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
     }
 }
 
-void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)
+void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, SpellTargetIndex targetIndex)
 {
     SpellDestination dest(*m_caster);
 
@@ -1501,8 +1502,8 @@ void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplici
             if (!unitCaster)
                 break;
 
-            float dist = m_spellInfo->Effects[effIndex].CalcRadius(unitCaster);
-            float angle = targetType.CalcDirectionAngle();
+            float dist = m_spellInfo->Effects[effIndex].CalcRadius(unitCaster, targetIndex);
+            float angle = targetType.CalcDirectionAngle(m_spellInfo->Effects[effIndex]);
 
             Position pos = dest._position;
             unitCaster->MovePositionToFirstCollision(pos, dist, angle);
@@ -1513,17 +1514,46 @@ void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplici
         case TARGET_DEST_CASTER_GROUND_2:
             dest._position.m_positionZ = m_caster->GetMapWaterOrGroundLevel(dest._position.GetPositionX(), dest._position.GetPositionY(), dest._position.GetPositionZ());
             break;
+        case TARGET_DEST_CASTER_SUMMON:
+        {
+            float angle = targetType.CalcDirectionAngle(m_spellInfo->Effects[effIndex]);
+            float dist = [&]()
+            {
+                // Effect specific radius may override default behavior
+                if (m_spellInfo->Effects[effIndex].HasRadius(targetIndex))
+                    return m_spellInfo->Effects[effIndex].CalcRadius(m_caster, targetIndex);
+
+                // Gameobject summons use range entries
+                if (m_spellInfo->Effects[effIndex].Effect == SPELL_EFFECT_TRANS_DOOR)
+                {
+                    if (m_spellInfo->RangeEntry != nullptr)
+                    {
+                        float minDist = m_spellInfo->GetMinRange(true);
+                        float maxDist = m_spellInfo->GetMaxRange(true);
+                        return frand(minDist, maxDist);
+                    }
+                    else
+                        return 0.f;
+                }
+                else // creature summons fall back to default distance
+                    return DEFAULT_FOLLOW_DISTANCE;
+
+                return 0.f;
+            }();
+
+            Position pos = dest._position;
+            m_caster->MovePositionToFirstCollision(pos, dist, angle);
+            dest.Relocate(pos);
+            break;
+        }
         default:
         {
-            float dist = m_spellInfo->Effects[effIndex].CalcRadius(m_caster);
-            float angle = targetType.CalcDirectionAngle();
+            float dist = m_spellInfo->Effects[effIndex].CalcRadius(m_caster, targetIndex);
+            float angle = targetType.CalcDirectionAngle(m_spellInfo->Effects[effIndex]);
             float objSize = m_caster->GetCombatReach();
 
             switch (targetType.GetTarget())
             {
-                case TARGET_DEST_CASTER_SUMMON:
-                    dist = DEFAULT_FOLLOW_DISTANCE;
-                    break;
                 case TARGET_DEST_CASTER_RANDOM:
                     if (dist > objSize)
                         dist = objSize + (dist - objSize) * float(rand_norm());
@@ -1534,7 +1564,7 @@ void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplici
                 case TARGET_DEST_CASTER_BACK_RIGHT:
                 {
                     static float const DefaultTotemDistance = 3.0f;
-                    if (!m_spellInfo->Effects[effIndex].HasRadius())
+                    if (!m_spellInfo->Effects[effIndex].HasRadius(targetIndex))
                         dist = DefaultTotemDistance;
                     break;
                 }
@@ -1557,7 +1587,7 @@ void Spell::SelectImplicitCasterDestTargets(SpellEffIndex effIndex, SpellImplici
     m_targets.SetDst(dest);
 }
 
-void Spell::SelectImplicitTargetDestTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)
+void Spell::SelectImplicitTargetDestTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, SpellTargetIndex targetIndex)
 {
     ASSERT(m_targets.GetObjectTarget() && "Spell::SelectImplicitTargetDestTargets - no explicit object target available!");
     WorldObject* target = m_targets.GetObjectTarget();
@@ -1571,8 +1601,8 @@ void Spell::SelectImplicitTargetDestTargets(SpellEffIndex effIndex, SpellImplici
             break;
         default:
         {
-            float angle = targetType.CalcDirectionAngle();
-            float dist = m_spellInfo->Effects[effIndex].CalcRadius(nullptr);
+            float angle = targetType.CalcDirectionAngle(m_spellInfo->Effects[effIndex]);
+            float dist = m_spellInfo->Effects[effIndex].CalcRadius(nullptr, targetIndex);
             if (targetType.GetTarget() == TARGET_DEST_TARGET_RANDOM)
                 dist *= float(rand_norm());
 
@@ -1588,7 +1618,7 @@ void Spell::SelectImplicitTargetDestTargets(SpellEffIndex effIndex, SpellImplici
     m_targets.SetDst(dest);
 }
 
-void Spell::SelectImplicitDestDestTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)
+void Spell::SelectImplicitDestDestTargets(SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType, SpellTargetIndex targetIndex)
 {
     // set destination to caster if no dest provided
     // can only happen if previous destination target could not be set for some reason
@@ -1607,8 +1637,8 @@ void Spell::SelectImplicitDestDestTargets(SpellEffIndex effIndex, SpellImplicitT
             break;
         default:
         {
-            float angle = targetType.CalcDirectionAngle();
-            float dist = m_spellInfo->Effects[effIndex].CalcRadius(m_caster);
+            float angle = targetType.CalcDirectionAngle(m_spellInfo->Effects[effIndex]);
+            float dist = m_spellInfo->Effects[effIndex].CalcRadius(m_caster, targetIndex);
             if (targetType.GetTarget() == TARGET_DEST_DEST_RANDOM)
                 dist *= float(rand_norm());
 
@@ -5185,18 +5215,14 @@ void Spell::TakePower()
     }
 
     Powers powerType = Powers(m_spellInfo->PowerType);
-    bool hit = true;
     if (unitCaster->GetTypeId() == TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR1_DISCOUNT_POWER_ON_MISS))
     {
-        if (ObjectGuid targetGUID = m_targets.GetUnitTargetGUID())
+        ObjectGuid targetGUID = m_targets.GetUnitTargetGUID();
+        if (!targetGUID.IsEmpty())
         {
-            auto ihit = std::find_if(std::begin(m_UniqueTargetInfo), std::end(m_UniqueTargetInfo), [&](TargetInfo const& targetInfo)
-            {
-                return targetInfo.TargetGUID == targetGUID && targetInfo.MissCondition != SPELL_MISS_NONE;
-            });
+            auto ihit = std::find_if(std::begin(m_UniqueTargetInfo), std::end(m_UniqueTargetInfo), [&](TargetInfo const& targetInfo) { return targetInfo.TargetGUID == targetGUID && targetInfo.MissCondition != SPELL_MISS_NONE; });
             if (ihit != std::end(m_UniqueTargetInfo))
             {
-                hit = false;
                 //lower spell cost on fail (by talent aura)
                 if (Player* modOwner = unitCaster->GetSpellModOwner())
                     modOwner->ApplySpellMod(m_spellInfo->Id, SpellModOp::PowerCostOnMiss, m_powerCost);
@@ -5889,6 +5915,11 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
         if (!focusObject)
             return SPELL_FAILED_REQUIRES_SPELL_FOCUS;
     }
+
+    // check reputation
+    if (m_spellInfo->MinFactionId && m_spellInfo->MinReputation && m_caster->IsPlayer())
+        if (m_caster->ToPlayer()->GetReputationRank(m_spellInfo->MinFactionId) < static_cast<ReputationRank>(m_spellInfo->MinReputation))
+            return SPELL_FAILED_REPUTATION;
 
     SpellCastResult castResult = SPELL_CAST_OK;
 
@@ -6902,10 +6933,9 @@ SpellCastResult Spell::CheckRange(bool strict) const
         if (minRange > 0.0f && m_caster->GetExactDistSq(target) < minRange && !target->HasFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_IGNORE_SPELL_MIN_RANGE_RESTRICTIONS))
             return SPELL_FAILED_TOO_CLOSE;
 
-        if (m_caster->GetTypeId() == TYPEID_PLAYER &&
-            (((m_spellInfo->FacingCasterFlags & SPELL_FACING_FLAG_INFRONT) && !m_caster->HasInArc(static_cast<float>(M_PI), target))
-                && !m_caster->ToPlayer()->IsWithinBoundaryRadius(target)))
-            return SPELL_FAILED_UNIT_NOT_INFRONT;
+        if (m_caster->IsPlayer() && m_spellInfo->FacingCasterFlags.HasFlag(SpellFacingCasterFlags::Infront))
+            if (!m_caster->HasInArc(static_cast<float>(M_PI), target) && !m_caster->ToPlayer()->IsWithinBoundaryRadius(target))
+                return SPELL_FAILED_UNIT_NOT_INFRONT;
     }
 
     if (GameObject* goTarget = m_targets.GetGOTarget())
@@ -8397,6 +8427,32 @@ void Spell::CallScriptAfterHitHandlers()
         auto hookItrEnd = (*scritr)->AfterHit.end(), hookItr = (*scritr)->AfterHit.begin();
         for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call();
+
+        (*scritr)->_FinishScriptCall();
+    }
+}
+
+void Spell::CallScriptCalcDamageHandlers(Unit* victim, int32& damage, int32& flatMod, float& pctMod)
+{
+    for (auto scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_CALC_DAMAGE);
+        auto hookItrEnd = (*scritr)->CalcDamage.end(), hookItr = (*scritr)->CalcDamage.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            (*hookItr).Call(victim, damage, flatMod, pctMod);
+
+        (*scritr)->_FinishScriptCall();
+    }
+}
+
+void Spell::CallScriptCalcHealingHandlers(Unit* victim, int32& healing, int32& flatMod, float& pctMod)
+{
+    for (auto scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
+    {
+        (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_CALC_HEALING);
+        auto hookItrEnd = (*scritr)->CalcHealing.end(), hookItr = (*scritr)->CalcHealing.begin();
+        for (; hookItr != hookItrEnd; ++hookItr)
+            (*hookItr).Call(victim, healing, flatMod, pctMod);
 
         (*scritr)->_FinishScriptCall();
     }

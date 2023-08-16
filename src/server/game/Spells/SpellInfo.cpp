@@ -100,7 +100,7 @@ SpellTargetDirectionTypes SpellImplicitTargetInfo::GetDirectionType() const
     return _data[_target].DirectionType;
 }
 
-float SpellImplicitTargetInfo::CalcDirectionAngle() const
+float SpellImplicitTargetInfo::CalcDirectionAngle(SpellEffectInfo const& effectInfo) const
 {
     switch (GetDirectionType())
     {
@@ -122,6 +122,17 @@ float SpellImplicitTargetInfo::CalcDirectionAngle() const
             return static_cast<float>(M_PI/4);
         case TARGET_DIR_RANDOM:
             return float(rand_norm())*static_cast<float>(2*M_PI);
+        case TARGET_DIR_SUMMON:
+            // This direction does alter its angle based on what is being summoned.
+            // Creatures are being summoned on the left, gameobjects infront
+            switch (effectInfo.Effect)
+            {
+                case SPELL_EFFECT_SUMMON_PET:
+                case SPELL_EFFECT_SUMMON:
+                    return static_cast<float>(M_PI / 2);
+                default:
+                    return 0.0f;
+            }
         default:
             return 0.0f;
     }
@@ -250,7 +261,7 @@ SpellImplicitTargetInfo::StaticData  SpellImplicitTargetInfo::_data[TOTAL_SPELL_
     {TARGET_OBJECT_TYPE_DEST, TARGET_REFERENCE_TYPE_DEST,   TARGET_SELECT_CATEGORY_DEFAULT, TARGET_CHECK_ALLY,     TARGET_DIR_NONE},        // 29 TARGET_DEST_DYNOBJ_ALLY
     {TARGET_OBJECT_TYPE_UNIT, TARGET_REFERENCE_TYPE_SRC,    TARGET_SELECT_CATEGORY_AREA,    TARGET_CHECK_ALLY,     TARGET_DIR_NONE},        // 30 TARGET_UNIT_SRC_AREA_ALLY
     {TARGET_OBJECT_TYPE_UNIT, TARGET_REFERENCE_TYPE_DEST,   TARGET_SELECT_CATEGORY_AREA,    TARGET_CHECK_ALLY,     TARGET_DIR_NONE},        // 31 TARGET_UNIT_DEST_AREA_ALLY
-    {TARGET_OBJECT_TYPE_DEST, TARGET_REFERENCE_TYPE_CASTER, TARGET_SELECT_CATEGORY_DEFAULT, TARGET_CHECK_DEFAULT,  TARGET_DIR_FRONT_LEFT},  // 32 TARGET_DEST_CASTER_SUMMON
+    {TARGET_OBJECT_TYPE_DEST, TARGET_REFERENCE_TYPE_CASTER, TARGET_SELECT_CATEGORY_DEFAULT, TARGET_CHECK_DEFAULT,  TARGET_DIR_SUMMON },     // 32 TARGET_DEST_CASTER_SUMMON
     {TARGET_OBJECT_TYPE_UNIT, TARGET_REFERENCE_TYPE_SRC,    TARGET_SELECT_CATEGORY_AREA,    TARGET_CHECK_PARTY,    TARGET_DIR_NONE},        // 33 TARGET_UNIT_SRC_AREA_PARTY
     {TARGET_OBJECT_TYPE_UNIT, TARGET_REFERENCE_TYPE_DEST,   TARGET_SELECT_CATEGORY_AREA,    TARGET_CHECK_PARTY,    TARGET_DIR_NONE},        // 34 TARGET_UNIT_DEST_AREA_PARTY
     {TARGET_OBJECT_TYPE_UNIT, TARGET_REFERENCE_TYPE_TARGET, TARGET_SELECT_CATEGORY_DEFAULT, TARGET_CHECK_PARTY,    TARGET_DIR_NONE},        // 35 TARGET_UNIT_TARGET_PARTY
@@ -369,8 +380,8 @@ SpellEffectInfo::SpellEffectInfo(SpellEntry const* /*spellEntry*/, SpellInfo con
     Mechanic = Mechanics(_effect ? _effect->EffectMechanic : 0);
     TargetA = SpellImplicitTargetInfo(_effect ? _effect->EffectImplicitTargetA : 0);
     TargetB = SpellImplicitTargetInfo(_effect ? _effect->EffectImplicitTargetB : 0);
-    RadiusEntry = _effect && _effect->EffectRadiusIndex ? sSpellRadiusStore.LookupEntry(_effect->EffectRadiusIndex) : nullptr;
-    MaxRadiusEntry = _effect && _effect->EffectRadiusMaxIndex ? sSpellRadiusStore.LookupEntry(_effect->EffectRadiusMaxIndex) : nullptr;
+    TargetARadiusEntry = _effect && _effect->EffectRadiusIndex ? sSpellRadiusStore.LookupEntry(_effect->EffectRadiusIndex) : nullptr;
+    TargetBRadiusEntry = _effect && _effect->EffectRadiusMaxIndex ? sSpellRadiusStore.LookupEntry(_effect->EffectRadiusMaxIndex) : nullptr;
     ChainTarget = _effect ? _effect->EffectChainTargets : 0;
     ItemType = _effect ? _effect->EffectItemType : 0;
     TriggerSpell = _effect ? _effect->EffectTriggerSpell : 0;
@@ -605,21 +616,27 @@ float SpellEffectInfo::CalcDamageMultiplier(WorldObject* caster, Spell* spell) c
     return multiplierPercent / 100.0f;
 }
 
-bool SpellEffectInfo::HasRadius() const
+bool SpellEffectInfo::HasRadius(SpellTargetIndex targetIndex) const
 {
-    return RadiusEntry != nullptr;
+    switch (targetIndex)
+    {
+        case SpellTargetIndex::TargetA:
+            return TargetARadiusEntry != nullptr;
+        case SpellTargetIndex::TargetB:
+            return TargetBRadiusEntry != nullptr;
+        default:
+            return false;
+    }
 }
 
-bool SpellEffectInfo::HasMaxRadius() const
+float SpellEffectInfo::CalcRadius(WorldObject* caster /*= nullptr*/, SpellTargetIndex targetIndex /*=SpellTargetIndex::TargetA*/, Spell* spell /*= nullptr*/) const
 {
-    return MaxRadiusEntry != nullptr;
-}
-
-float SpellEffectInfo::CalcRadius(WorldObject* caster, Spell* spell) const
-{
-    const SpellRadiusEntry* entry = RadiusEntry;
-    if (!HasRadius() && HasMaxRadius())
-        entry = MaxRadiusEntry;
+    // TargetA -> TargetARadiusEntry
+    // TargetB -> TargetBRadiusEntry
+    // Aura effects have TargetARadiusEntry == TargetBRadiusEntry (mostly)
+    SpellRadiusEntry const* entry = TargetARadiusEntry;
+    if (targetIndex == SpellTargetIndex::TargetB && HasRadius(targetIndex))
+        entry = TargetBRadiusEntry;
 
     if (!entry)
         return 0.0f;
@@ -949,7 +966,9 @@ SpellInfo::SpellInfo(SpellEntry const* spellEntry, SpellEffectEntry const** effe
     // SpellCastingRequirementsEntry
     SpellCastingRequirementsEntry const* _castreq = GetSpellCastingRequirements();
     RequiresSpellFocus = _castreq ? _castreq->RequiresSpellFocus : 0;
-    FacingCasterFlags = _castreq ? _castreq->FacingCasterFlags : 0;
+    FacingCasterFlags = _castreq ? SpellFacingCasterFlags(_castreq->FacingCasterFlags) : SpellFacingCasterFlags::None;
+    MinFactionId = _castreq ? _castreq->MinFactionID : 0;
+    MinReputation = _castreq ? _castreq->MinReputation : 0;
     AreaGroupId = _castreq ? _castreq->RequiredAreasID : -1;
 
     // SpellCategoriesEntry
@@ -1101,6 +1120,20 @@ bool SpellInfo::HasOnlyDamageEffects() const
     }
 
     return true;
+}
+
+bool SpellInfo::HasTargetType(::Targets target) const
+{
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+    {
+        if (!Effects[i].IsEffect())
+            continue;
+
+        if (Effects[i].TargetA.GetTarget() == target || Effects[i].TargetB.GetTarget() == target)
+            return true;
+    }
+
+    return false;
 }
 
 bool SpellInfo::CanBeInterrupted(Unit const* interruptTarget, bool ignoreImmunity /*= false*/) const
