@@ -1086,7 +1086,8 @@ void SpellMgr::LoadSpellLearnSpells()
         node.active      = fields[2].GetBool();
         node.autoLearned = false;
 
-        if (!GetSpellInfo(spell_id))
+        SpellInfo const* spellInfo = GetSpellInfo(spell_id);
+        if (!spellInfo)
         {
             TC_LOG_ERROR("sql.sql", "The spell %u listed in `spell_learn_spell` does not exist.", spell_id);
             continue;
@@ -1098,7 +1099,7 @@ void SpellMgr::LoadSpellLearnSpells()
             continue;
         }
 
-        if (sDBCManager.GetTalentSpellCost(node.spell))
+        if (spellInfo->HasAttribute(SPELL_ATTR0_CU_IS_TALENT))
         {
             TC_LOG_ERROR("sql.sql", "The spell %u listed in `spell_learn_spell` attempts learning talent spell %u, skipped.", spell_id, node.spell);
             continue;
@@ -1136,7 +1137,7 @@ void SpellMgr::LoadSpellLearnSpells()
                 // talent or passive spells or skill-step spells auto-cast and not need dependent learning,
                 // pet teaching spells must not be dependent learning (cast)
                 // other required explicit dependent learning
-                dbc_node.autoLearned = entry->Effects[i].TargetA.GetTarget() == TARGET_UNIT_PET || sDBCManager.GetTalentSpellCost(spell) > 0 || entry->IsPassive() || entry->HasEffect(SPELL_EFFECT_SKILL_STEP);
+                dbc_node.autoLearned = entry->Effects[i].TargetA.GetTarget() == TARGET_UNIT_PET || entry->HasAttribute(SPELL_ATTR0_CU_IS_TALENT) || entry->IsPassive() || entry->HasEffect(SPELL_EFFECT_SKILL_STEP);
 
                 SpellLearnSpellMapBounds db_node_bounds = dbSpellLearnSpells.equal_range(spell);
 
@@ -2669,6 +2670,12 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
         TC_LOG_INFO("server.loading", ">> Loaded %u spell custom attributes from DB in %u ms", count, GetMSTimeDiffToNow(oldMSTime2));
     }
 
+    std::set<uint32> talentSpells;
+    for (TalentEntry const* talentInfo : sTalentStore)
+        for (uint8 i = 0; i < MAX_TALENT_RANK; ++i)
+            if (uint32 spellId = talentInfo->SpellRank[i])
+                talentSpells.insert(spellId);
+
     for (SpellInfo* spellInfo : mSpellInfoMap)
     {
         if (!spellInfo)
@@ -2701,6 +2708,20 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
                 case SPELL_AURA_OBS_MOD_POWER:
                 case SPELL_AURA_POWER_BURN:
                     spellInfo->AttributesCu |= SPELL_ATTR0_CU_NO_INITIAL_THREAT;
+                    break;
+            }
+
+            switch (spellInfo->Effects[j].ApplyAuraName)
+            {
+                case SPELL_AURA_OPEN_STABLE:    // No point in saving this, since the stable dialog can't be open on aura load anyway.
+                    // Auras that require both caster & target to be in world cannot be saved
+                case SPELL_AURA_CONTROL_VEHICLE:
+                case SPELL_AURA_BIND_SIGHT:
+                case SPELL_AURA_MOD_POSSESS:
+                case SPELL_AURA_MOD_CHARM:
+                case SPELL_AURA_AOE_CHARM:
+                case SPELL_AURA_CONVERT_RUNE:
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CANNOT_BE_SAVED;
                     break;
             }
 
@@ -2865,6 +2886,9 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
 
         spellInfo->_InitializeSpellPositivity();
 
+        if (talentSpells.count(spellInfo->Id))
+            spellInfo->AttributesCu |= SPELL_ATTR0_CU_IS_TALENT;
+
         switch (spellInfo->SpellFamilyName)
         {
             case SPELLFAMILY_WARRIOR:
@@ -2887,6 +2911,10 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
         }
 
         spellInfo->_InitializeExplicitTargetMask();
+
+        // Saving to DB happens before removing from world - skip saving these auras
+        if (spellInfo->HasAuraInterruptFlag(SpellAuraInterruptFlags::LeaveWorld))
+            spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CANNOT_BE_SAVED;
     }
 
     // addition for binary spells, omit spells triggering other spells
@@ -2945,7 +2973,7 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
         {
             if (uint32 spellId = liquid->SpellID)
                 if (SpellInfo* spellInfo = _GetSpellInfo(spellId))
-                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_LIQUID_AURA;
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CANNOT_BE_SAVED;
         }
     }
 

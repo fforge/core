@@ -26,7 +26,7 @@ cmake_policy(SET CMP0074 NEW) # find_package() uses <PackageName>_ROOT variables
 # Set RPATH-handing (CMake parameters)
 set(CMAKE_SKIP_BUILD_RPATH 0)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH 0)
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH 1)
 
 # set macro-directory
@@ -86,4 +86,10 @@ if(BUILD_TESTING)
   include(Catch)
 
   add_subdirectory(tests)
+  
+  # Catch cmakefile messes with our settings we explicitly leave up to the user
+  # restore user preference
+  if (NOT WITH_SOURCE_TREE STREQUAL "hierarchical-folders")
+    set_property(GLOBAL PROPERTY USE_FOLDERS OFF)
+  endif()
 endif()

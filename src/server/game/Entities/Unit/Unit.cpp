@@ -542,9 +542,8 @@ void Unit::UpdateSplineMovement(uint32 t_diff)
     if (arrived)
     {
         DisableSpline();
-
-        if (movespline->HasAnimation())
-            SetAnimationTier(movespline->GetAnimationTier());
+        if (Optional<AnimationTier> animTier = movespline->GetAnimation())
+            SetAnimationTier(*animTier);
     }
 
     UpdateSplinePosition();
@@ -564,6 +563,8 @@ void Unit::UpdateSplinePosition()
 
         if (TransportBase* transport = GetDirectTransport())
             transport->CalculatePassengerPosition(loc.x, loc.y, loc.z, &loc.orientation);
+        else
+            return;
     }
 
     if (HasUnitState(UNIT_STATE_CANNOT_TURN))
@@ -851,6 +852,10 @@ bool Unit::HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel) cons
             damage = health - 1;
 
         duel_hasEnded = true;
+    }
+    else if (victim->IsCreature() && damage >= health && victim->ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_UNKILLABLE))
+    {
+        damage = health - 1;
     }
     else if (victim->IsVehicle() && damage >= (health-1) && victim->GetCharmer() && victim->GetCharmer()->GetTypeId() == TYPEID_PLAYER)
     {
@@ -1406,8 +1411,8 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
 
     // If this is a creature and it attacks from behind it has a probability to daze it's victim
     if ((damageInfo->HitOutCome == MELEE_HIT_CRIT || damageInfo->HitOutCome == MELEE_HIT_CRUSHING || damageInfo->HitOutCome == MELEE_HIT_NORMAL || damageInfo->HitOutCome == MELEE_HIT_GLANCING) &&
-        GetTypeId() != TYPEID_PLAYER && !ToCreature()->IsControlledByPlayer() && !victim->HasInArc(float(M_PI), this)
-        && (victim->GetTypeId() == TYPEID_PLAYER || !victim->ToCreature()->isWorldBoss())&& !victim->IsVehicle())
+        IsCreature() && !ToCreature()->IsControlledByPlayer() && !ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_4_CANNOT_DAZE) &&
+        !victim->HasInArc(float(M_PI), this) && (victim->IsPlayer() || (victim->IsCreature() && !victim->ToCreature()->isWorldBoss())) && !victim->IsVehicle())
     {
         // 20% base chance
         float chance = 20.0f;
@@ -2069,8 +2074,12 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(const Unit* victim, WeaponAttackTy
     int32    sum = 0, tmp = 0;
     int32    roll = urand(0, 9999);
 
+    float arcAngle = static_cast<float>(M_PI);
+    if (victim->IsCreature() && victim->ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_5_240_DEGREE_BACK_ARC))
+        arcAngle -= static_cast<float>(M_PI / 3);
+
     // check if attack comes from behind, nobody can parry or block if attacker is behind
-    bool canParryOrBlock = victim->HasInArc(float(M_PI), this) || victim->HasAuraType(SPELL_AURA_IGNORE_HIT_DIRECTION);
+    bool canParryOrBlock = victim->HasInArc(arcAngle, this) || victim->HasAuraType(SPELL_AURA_IGNORE_HIT_DIRECTION);
 
     // only creatures can dodge if attacker is behind
     bool canDodge = victim->GetTypeId() != TYPEID_PLAYER || canParryOrBlock;
@@ -5298,9 +5307,15 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
         return false;
 
     Creature* creature = ToCreature();
-    // creatures cannot attack while evading
-    if (creature && creature->IsInEvadeMode())
-        return false;
+    if (creature)
+    {
+        // creatures cannot attack while evading
+        if (creature->IsInEvadeMode())
+            return false;
+
+        if (!creature->CanMelee())
+            meleeAttack = false;
+    }
 
     if (HasAuraType(SPELL_AURA_DISABLE_ATTACKING_EXCEPT_ABILITIES))
         return false;
@@ -6307,12 +6322,6 @@ int32 Unit::SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, int3
             attackPowerCoeff = bonus->ap_bonus;
         }
     }
-    else
-    {
-        // No bonus damage for SPELL_DAMAGE_CLASS_NONE class spells by default
-        if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_NONE)
-            return uint32(std::max(pdamage * DoneTotalMod, 0.0f));
-    }
 
     if (spellPowerCoeff > 0.f)
         spellPowerCoeff = spellProto->CalculateScaledCoefficient(this, spellPowerCoeff);
@@ -7031,12 +7040,6 @@ int32 Unit::SpellHealingBonusDone(Unit* victim, SpellInfo const* spellProto, int
             if (bonus->ap_bonus > 0)
                 DoneTotal += int32(bonus->ap_bonus * stack * APbonus);
         }
-    }
-    else
-    {
-        // No bonus healing for SPELL_DAMAGE_CLASS_NONE class spells by default
-        if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_NONE)
-            return uint32(std::max(healamount * DoneTotalMod, 0.0f));
     }
 
     // Default calculation
@@ -10351,12 +10354,15 @@ void Unit::RecalculateObjectScale()
     SetObjectScale(std::max(scale, scaleMin));
 }
 
-void Unit::SetDisplayId(uint32 modelId)
+void Unit::SetDisplayId(uint32 modelId, bool setNative /*= false*/)
 {
     SetUInt32Value(UNIT_FIELD_DISPLAYID, modelId);
     // Set Gender by modelId
     if (CreatureModelInfo const* minfo = sObjectMgr->GetCreatureModelInfo(modelId))
         SetByteValue(UNIT_FIELD_BYTES_0, UNIT_BYTES_0_OFFSET_GENDER, minfo->gender);
+
+    if (setNative)
+        SetUInt32Value(UNIT_FIELD_NATIVEDISPLAYID, modelId);
 }
 
 void Unit::RestoreDisplayId()
@@ -11035,7 +11041,7 @@ void Unit::PlayOneShotAnimKitId(uint16 animKitId)
         {
             group->BroadcastPacket(&data, group->GetMemberGroup(player->GetGUID()) != 0);
 
-            if (creature)
+            if (creature && !creature->IsLootDisabled())
             {
                 group->UpdateLooterGuid(creature, true);
                 if (group->GetLooterGuid())
@@ -11053,7 +11059,7 @@ void Unit::PlayOneShotAnimKitId(uint16 animKitId)
         {
             player->SendDirectMessage(&data);
 
-            if (creature)
+            if (creature && !creature->IsLootDisabled())
             {
                 WorldPackets::Loot::LootList lootList;
                 lootList.Owner = creature->GetGUID();
@@ -11064,7 +11070,7 @@ void Unit::PlayOneShotAnimKitId(uint16 animKitId)
         }
 
         // Generate loot before updating looter
-        if (creature)
+        if (creature && !creature->IsLootDisabled())
         {
             Loot* loot = &creature->loot;
             loot->clear();
@@ -11853,8 +11859,8 @@ bool Unit::IsInPartyWith(Unit const* unit) const
 
     if (u1->GetTypeId() == TYPEID_PLAYER && u2->GetTypeId() == TYPEID_PLAYER)
         return u1->ToPlayer()->IsInSameGroupWith(u2->ToPlayer());
-    else if ((u2->GetTypeId() == TYPEID_PLAYER && u1->GetTypeId() == TYPEID_UNIT && u1->ToCreature()->GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_TREAT_AS_RAID_UNIT) ||
-        (u1->GetTypeId() == TYPEID_PLAYER && u2->GetTypeId() == TYPEID_UNIT && u2->ToCreature()->GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_TREAT_AS_RAID_UNIT))
+    else if ((u2->GetTypeId() == TYPEID_PLAYER && u1->GetTypeId() == TYPEID_UNIT && u1->ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_4_TREAT_AS_RAID_UNIT_FOR_HELPFUL_SPELLS)) ||
+        (u1->GetTypeId() == TYPEID_PLAYER && u2->GetTypeId() == TYPEID_UNIT && u2->ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_4_TREAT_AS_RAID_UNIT_FOR_HELPFUL_SPELLS)))
         return true;
 
     return u1->GetTypeId() == TYPEID_UNIT && u2->GetTypeId() == TYPEID_UNIT && u1->GetFaction() == u2->GetFaction();
@@ -11872,8 +11878,8 @@ bool Unit::IsInRaidWith(Unit const* unit) const
 
     if (u1->GetTypeId() == TYPEID_PLAYER && u2->GetTypeId() == TYPEID_PLAYER)
         return u1->ToPlayer()->IsInSameRaidWith(u2->ToPlayer());
-    else if ((u2->GetTypeId() == TYPEID_PLAYER && u1->GetTypeId() == TYPEID_UNIT && u1->ToCreature()->GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_TREAT_AS_RAID_UNIT) ||
-            (u1->GetTypeId() == TYPEID_PLAYER && u2->GetTypeId() == TYPEID_UNIT && u2->ToCreature()->GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_TREAT_AS_RAID_UNIT))
+    else if ((u2->GetTypeId() == TYPEID_PLAYER && u1->GetTypeId() == TYPEID_UNIT && u1->ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_4_TREAT_AS_RAID_UNIT_FOR_HELPFUL_SPELLS)) ||
+            (u1->GetTypeId() == TYPEID_PLAYER && u2->GetTypeId() == TYPEID_UNIT && u2->ToCreature()->HasStaticFlag(CREATURE_STATIC_FLAG_4_TREAT_AS_RAID_UNIT_FOR_HELPFUL_SPELLS)))
         return true;
 
     return u1->GetTypeId() == TYPEID_UNIT && u2->GetTypeId() == TYPEID_UNIT && u1->GetFaction() == u2->GetFaction();
@@ -13649,6 +13655,21 @@ void Unit::SetFacingToObject(WorldObject const* object, bool force)
     init.Launch();
 }
 
+void Unit::SetFacingToPoint(Position const& point, bool force)
+{
+    // do not face when already moving
+    if (!force && (!IsStopped() || !movespline->Finalized()))
+        return;
+
+    /// @todo figure out under what conditions creature will move towards object instead of facing it where it currently is.
+    Movement::MoveSplineInit init(this);
+    init.MoveTo(GetPositionX(), GetPositionY(), GetPositionZ(), false);
+    if (GetTransport())
+        init.DisableTransportPathTransformations(); // It makes no sense to target global orientation
+    init.SetFacing(point.GetPositionX(), point.GetPositionY(), point.GetPositionZ());
+    init.Launch();
+}
+
 bool Unit::SetWalk(bool enable)
 {
     if (enable == IsWalking())
@@ -13979,7 +14000,7 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
 
                     if (cinfo->flags_extra & CREATURE_FLAG_EXTRA_TRIGGER)
                         if (target->IsGameMaster())
-                            displayId = cinfo->GetFirstVisibleModel();
+                            displayId = cinfo->GetFirstVisibleModel()->CreatureDisplayID;
                 }
 
                 fieldBuffer << uint32(displayId);
