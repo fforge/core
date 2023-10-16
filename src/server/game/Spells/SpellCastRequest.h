@@ -15,29 +15,28 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _WARDEN_MAC_H
-#define _WARDEN_MAC_H
+#ifndef SpellCastRequest_h__
+#define SpellCastRequest_h__
 
-#include "Cryptography/ARC4.h"
-#include "ByteBuffer.h"
-#include "Warden.h"
+#include "SpellPacketsCommon.h"
 
-class WorldSession;
-class Warden;
-
-class TC_GAME_API WardenMac : public Warden
+struct SpellCastRequestItemData
 {
-    public:
-        WardenMac();
-        ~WardenMac();
+    SpellCastRequestItemData(uint8 bagSlot, uint8 slot, ObjectGuid castItem) :
+        BagSlot(bagSlot), Slot(slot), CastItem(castItem) { }
 
-        void Init(WorldSession* session, BigNumber* k) override;
-        ClientWardenModule* GetModuleForClient() override;
-        void InitializeModule() override;
-        void RequestHash() override;
-        void HandleHashResult(ByteBuffer& buff) override;
-        void RequestData() override;
-        void HandleData(ByteBuffer& buff) override;
+    uint8 BagSlot = 0;
+    uint8 Slot = 0;
+    ObjectGuid CastItem;
 };
 
-#endif
+struct PendingSpellCastRequest
+{
+    PendingSpellCastRequest(WorldPackets::Spells::SpellCastRequest&& castRequest, Optional<SpellCastRequestItemData> castItemData = { }) :
+        CastRequest(castRequest), CastItemData(castItemData) { }
+
+    WorldPackets::Spells::SpellCastRequest CastRequest;
+    Optional<SpellCastRequestItemData> CastItemData;
+};
+
+#endif // SpellCastRequest_h__

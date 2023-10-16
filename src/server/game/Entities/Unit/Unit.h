@@ -24,14 +24,12 @@
 #include "SpellDefines.h"
 #include "ThreatManager.h"
 #include "Timer.h"
-#include "SpellPacketsCommon.h"
 #include "UnitDefines.h"
 #include "Util.h"
 #include <array>
 #include <map>
 #include <memory>
 #include <stack>
-#include <queue>
 
 #define WORLD_TRIGGER   12999
 
@@ -68,6 +66,7 @@ struct FactionTemplateEntry;
 struct LiquidData;
 struct LiquidTypeEntry;
 struct MountCapabilityEntry;
+struct PendingSpellCastRequest;
 struct SpellValue;
 
 class Aura;
@@ -770,29 +769,6 @@ struct PositionUpdateInfo
 
     bool Relocated = false;
     bool Turned = false;
-};
-
-struct SpellCastRequestItemData
-{
-    SpellCastRequestItemData(uint8 bagSlot, uint8 slot, ObjectGuid castItem) :
-        BagSlot(bagSlot), Slot(slot), CastItem(castItem)
-    {
-    }
-
-    uint8 BagSlot = 0;
-    uint8 Slot = 0;
-    ObjectGuid CastItem;
-};
-
-struct PendingSpellCastRequest
-{
-    PendingSpellCastRequest(WorldPackets::Spells::SpellCastRequest&& castRequest, Optional<SpellCastRequestItemData> castItemData = {}) :
-        CastRequest(castRequest), CastItemData(castItemData)
-    {
-    }
-
-    WorldPackets::Spells::SpellCastRequest CastRequest;
-    Optional<SpellCastRequestItemData> CastItemData;
 };
 
 // delay time next attack to prevent client attack animation problems
@@ -1804,7 +1780,7 @@ class TC_GAME_API Unit : public WorldObject
         void SetIgnoringCombat(bool apply) { _isIgnoringCombat = apply; }
 
         // Queues up a spell cast request that has been received via packet and processes it whenever possible.
-        void RequestSpellCast(PendingSpellCastRequest castRequest, SpellInfo const* spellInfo);
+        void RequestSpellCast(std::unique_ptr<PendingSpellCastRequest> castRequest, SpellInfo const* spellInfo);
         void CancelPendingCastRequest();
         bool CanRequestSpellCast(SpellInfo const* spell) const;
 
@@ -1957,7 +1933,7 @@ class TC_GAME_API Unit : public WorldObject
 
         bool _isIgnoringCombat;
 
-        Optional<PendingSpellCastRequest> _pendingSpellCastRequest;
+        std::unique_ptr<PendingSpellCastRequest> _pendingSpellCastRequest;
         void ProcessPendingSpellCastRequest();
         void ProcessItemCast(PendingSpellCastRequest const& castRequest, SpellCastTargets const& targets);
         bool CanExecutePendingSpellCastRequest(SpellInfo const* spellInfo) const;

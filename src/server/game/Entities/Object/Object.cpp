@@ -25,7 +25,6 @@
 #include "Common.h"
 #include "Creature.h"
 #include "DBCStores.h"
-#include "DynamicTree.h"
 #include "G3DPosition.hpp"
 #include "GameTime.h"
 #include "GridNotifiers.h"
@@ -38,7 +37,6 @@
 #include "MovementPacketBuilder.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
-#include "Opcodes.h"
 #include "OutdoorPvPMgr.h"
 #include "PhasingHandler.h"
 #include "PathGenerator.h"
@@ -1217,7 +1215,7 @@ void WorldObject::ProcessPositionDataChanged(PositionFullTerrainStatus const& da
 {
     m_zoneId = m_areaId = data.areaId;
     if (AreaTableEntry const* area = sAreaTableStore.LookupEntry(m_areaId))
-        if (area->ParentAreaID)
+        if (area->ParentAreaID && area->GetFlags().HasFlag(AreaFlags::IsSubzone))
             m_zoneId = area->ParentAreaID;
     m_outdoors = data.outdoors;
     m_staticFloorZ = data.floorZ;
