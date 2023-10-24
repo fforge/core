@@ -323,7 +323,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             break;
         }
         case CONDITION_AREAID:
-            condMeets = object->GetAreaId() == ConditionValue1;
+            condMeets = DBCManager::IsInArea(object->GetAreaId(), ConditionValue1);
             break;
         case CONDITION_SPELL:
         {
