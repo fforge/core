@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace HallsOfLightning
+{
 #define HoLScriptName "instance_halls_of_lightning"
-#define DataHeader    "HOL"
+constexpr char const* DataHeader = "HOL";
 
 uint32 const EncounterCount = 4;
 
@@ -80,5 +82,6 @@ inline AI* GetHallsOfLightningAI(T* obj)
 }
 
 #define RegisterHallsOfLightningCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetHallsOfLightningAI)
+}
 
 #endif // HALLS_OF_LIGHTNING_H_

@@ -27,6 +27,8 @@ Category: Caverns of Time, The Dark Portal
 #include "ScriptedCreature.h"
 #include "the_black_morass.h"
 
+namespace TheBlackMorass::Aeonus
+{
 enum Enums
 {
     SAY_ENTER           = 0,
@@ -79,7 +81,7 @@ public:
                 if (me->IsWithinDistInMap(who, 20.0f))
                 {
                     Talk(SAY_BANISH);
-                    Unit::DealDamage(me, who, who->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+                    Unit::DealDamage(me, who, who->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
                 }
             }
 
@@ -144,8 +146,11 @@ public:
         return GetBlackMorassAI<boss_aeonusAI>(creature);
     }
 };
+}
 
 void AddSC_boss_aeonus()
 {
+    using namespace TheBlackMorass;
+    using namespace TheBlackMorass::Aeonus;
     new boss_aeonus();
 }

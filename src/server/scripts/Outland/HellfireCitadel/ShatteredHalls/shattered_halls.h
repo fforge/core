@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace ShatteredHalls
+{
 #define SHScriptName "instance_shattered_halls"
-#define DataHeader "SH"
+constexpr char const* DataHeader = "SH";
 
 uint32 const EncounterCount          = 4;
 uint32 const VictimCount             = 3;
@@ -116,6 +118,7 @@ template <class AI, class T>
 inline AI* GetShatteredHallsAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, SHScriptName);
+}
 }
 
 #endif

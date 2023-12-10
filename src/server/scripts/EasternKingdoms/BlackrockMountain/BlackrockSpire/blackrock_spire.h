@@ -20,10 +20,12 @@
 
 #include "CreatureAIImpl.h"
 
+namespace BlackrockSpire
+{
 uint32 const EncounterCount         = 23;
 
 #define BRSScriptName "instance_blackrock_spire"
-#define DataHeader    "BRS"
+constexpr char const* DataHeader =    "BRS";
 
 enum BRSDataTypes
 {
@@ -126,6 +128,7 @@ template <class AI, class T>
 inline AI* GetBlackrockSpireAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, BRSScriptName);
+}
 }
 
 #endif

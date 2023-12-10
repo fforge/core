@@ -121,7 +121,7 @@ float SpellImplicitTargetInfo::CalcDirectionAngle(SpellEffectInfo const& effectI
         case TARGET_DIR_FRONT_LEFT:
             return static_cast<float>(M_PI/4);
         case TARGET_DIR_RANDOM:
-            return float(rand_norm())*static_cast<float>(2*M_PI);
+            return rand_norm() * static_cast<float>(2 * M_PI);
         case TARGET_DIR_SUMMON:
             // This direction does alter its angle based on what is being summoned.
             // Creatures are being summoned on the left, gameobjects infront
@@ -639,14 +639,28 @@ float SpellEffectInfo::CalcRadius(WorldObject* caster /*= nullptr*/, SpellTarget
     // TargetA -> TargetARadiusEntry
     // TargetB -> TargetBRadiusEntry
     // Aura effects have TargetARadiusEntry == TargetBRadiusEntry (mostly)
+    SpellImplicitTargetInfo target = TargetA;
     SpellRadiusEntry const* entry = TargetARadiusEntry;
     if (targetIndex == SpellTargetIndex::TargetB && HasRadius(targetIndex))
+    {
+        target = TargetB;
         entry = TargetBRadiusEntry;
+    }
 
     if (!entry)
         return 0.0f;
 
     float radius = entry->RadiusMin;
+
+    // Random targets use random value between RadiusMin and RadiusMax
+    // For other cases, client uses RadiusMax if RadiusMin is 0
+    if (target.GetTarget() == TARGET_DEST_CASTER_RANDOM ||
+        target.GetTarget() == TARGET_DEST_TARGET_RANDOM ||
+        target.GetTarget() == TARGET_DEST_DEST_RANDOM)
+        radius += (entry->RadiusMax - radius) * rand_norm();
+    else if (radius == 0.0f)
+        radius = entry->RadiusMax;
+
     if (caster)
     {
         if (Unit* casterUnit = caster->ToUnit())

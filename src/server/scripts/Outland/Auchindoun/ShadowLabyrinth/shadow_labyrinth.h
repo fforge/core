@@ -21,8 +21,10 @@
 #include "CreatureAIImpl.h"
 #include "ObjectGuid.h"
 
+namespace ShadowLabyrinth
+{
 #define SLScriptName "instance_shadow_labyrinth"
-#define DataHeader "SL"
+constexpr char const* DataHeader = "SL";
 
 uint32 const EncounterCount = 4;
 
@@ -69,6 +71,7 @@ template <class AI, class T>
 inline AI* GetShadowLabyrinthAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, SLScriptName);
+}
 }
 
 #endif // SHADOW_LABYRINTH_H_

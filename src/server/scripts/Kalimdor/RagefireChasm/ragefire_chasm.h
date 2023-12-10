@@ -20,8 +20,10 @@
 
 #include "Define.h"
 
+namespace RagefireChasm
+{
 #define RCScriptName "instance_ragefire_chasm"
-#define DataHeader   "RC"
+constexpr char const* DataHeader = "RC";
 
 uint32 const EncounterCount = 4;
 
@@ -33,6 +35,7 @@ enum RCDataTypes
     DATA_BAZZALAN               = 2,
     DATA_TARAGAMAN_THE_HUNGERER = 3
 };
+}
 
 #endif // RAGEFIRE_CHASM_H_
 

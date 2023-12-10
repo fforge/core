@@ -22,7 +22,9 @@
 #include "Position.h"
 #include <array>
 
-#define DataHeader "FL"
+namespace Firelands
+{
+constexpr char const* DataHeader = "FL";
 #define FirelandsScriptName "instance_firelands"
 
 uint32 const EncounterCount = 7;
@@ -1117,5 +1119,6 @@ inline AI* GetFirelandsAI(T* obj)
 }
 
 #define RegisterFirelandsCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetFirelandsAI)
+}
 
 #endif // FIRELANDS_H_

@@ -27,6 +27,8 @@ Category: Caverns of Time, The Black Morass
 #include "ScriptedCreature.h"
 #include "the_black_morass.h"
 
+namespace TheBlackMorass::Temporus
+{
 enum Enums
 {
     SAY_ENTER               = 0,
@@ -94,7 +96,7 @@ public:
                 {
                     Talk(SAY_BANISH);
 
-                    Unit::DealDamage(me, who, who->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+                    Unit::DealDamage(me, who, who->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
                 }
             }
 
@@ -148,8 +150,11 @@ public:
         return GetBlackMorassAI<boss_temporusAI>(creature);
     }
 };
+}
 
 void AddSC_boss_temporus()
 {
+    using namespace TheBlackMorass;
+    using namespace TheBlackMorass::Temporus;
     new boss_temporus();
 }

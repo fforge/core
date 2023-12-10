@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace AzjolNerub
+{
 #define AzjolNerubScriptName "instance_azjol_nerub"
-#define DataHeader           "AN"
+constexpr char const* DataHeader = "AN";
 
 uint32 const EncounterCount = 3;
 
@@ -70,6 +72,7 @@ template <class AI, class T>
 inline AI* GetAzjolNerubAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, AzjolNerubScriptName);
+}
 }
 
 #endif // AZJOL_NERUB_H_

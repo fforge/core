@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Naxxramas
+{
 #define NaxxramasScriptName "instance_naxxramas"
-#define DataHeader "NAX"
+constexpr char const* DataHeader = "NAX";
 
 uint32 const EncounterCount     = 15;
 
@@ -219,5 +221,6 @@ inline AI* GetNaxxramasAI(T* obj)
     return GetInstanceAI<AI>(obj, NaxxramasScriptName);
 }
 #define RegisterNaxxramasCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetNaxxramasAI)
+}
 
 #endif

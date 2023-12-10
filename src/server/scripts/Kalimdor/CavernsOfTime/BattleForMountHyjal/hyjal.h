@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace BattleForMountHyjal
+{
 #define HyjalScriptName "instance_hyjal"
-#define DataHeader "HY"
+constexpr char const* DataHeader = "HY";
 
 uint32 const EncounterCount     = 5;
 
@@ -99,6 +101,7 @@ template <class AI, class T>
 inline AI* GetHyjalAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, HyjalScriptName);
+}
 }
 
 #endif

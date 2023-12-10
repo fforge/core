@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Scholomance
+{
 #define ScholomanceScriptName "instance_scholomance"
-#define DataHeader "SC"
+constexpr char const* DataHeader = "SC";
 
 uint32 const EncounterCount             = 8;
 
@@ -60,6 +62,7 @@ template <class AI, class T>
 inline AI* GetScholomanceAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, ScholomanceScriptName);
+}
 }
 
 #endif

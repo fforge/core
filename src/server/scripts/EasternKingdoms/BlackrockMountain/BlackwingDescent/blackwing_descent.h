@@ -20,7 +20,9 @@
 
 #include "CreatureAIImpl.h"
 
-#define DataHeader "BWD"
+namespace BlackwingDescent
+{
+constexpr char const* DataHeader = "BWD";
 #define BWDScriptName "instance_blackwing_descent"
 
 uint32 const EncounterCount = 6;
@@ -231,5 +233,6 @@ inline AI* GetBlackwingDescentAI(T* obj)
 }
 
 #define RegisterBlackwingDescentCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetBlackwingDescentAI)
+}
 
 #endif

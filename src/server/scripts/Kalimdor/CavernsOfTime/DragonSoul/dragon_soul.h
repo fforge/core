@@ -22,7 +22,9 @@
 #include "Creature.h"
 #include "CreatureAIImpl.h"
 
-#define DataHeader "DS"
+namespace DragonSoul
+{
+constexpr char const* DataHeader = "DS";
 #define DSScriptName "instance_dragon_soul"
 
 uint32 const EncounterCount = 8;
@@ -115,5 +117,6 @@ AI* GetDragonSoulAI(Creature* creature)
 }
 
 #define RegisterDragonSoulCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetDragonSoulAI)
+}
 
 #endif // DEF_DRAGONSOUL_H

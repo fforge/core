@@ -21,7 +21,9 @@
 #include "CreatureAIImpl.h"
 #include "Position.h"
 
-#define DataHeader "DM"
+namespace Deadmines
+{
+constexpr char const* DataHeader = "DM";
 #define DMScriptName "instance_deadmines"
 
 uint32 const EncounterCount = 6;
@@ -551,6 +553,7 @@ AI* GetDeadminesAI(GameObject* go)
 }
 
 #define RegisterDeadminesCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetDeadminesAI)
+}
 
 // DEADMINES_H_
 #endif

@@ -21,7 +21,9 @@
 #include "CreatureAIImpl.h"
 #include "Position.h"
 
-#define DataHeader "HOO"
+namespace HallsOfOrigination
+{
+constexpr char const* DataHeader = "HOO";
 #define HoOScriptName "instance_halls_of_origination"
 
 uint32 const EncounterCount = 12;
@@ -245,6 +247,6 @@ inline AI* GetHallsOfOriginationAI(T* obj)
 }
 
 #define RegisterHallsOfOriginationCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetHallsOfOriginationAI)
-
+}
 
 #endif // HALLS_OF_ORIGINATION_H

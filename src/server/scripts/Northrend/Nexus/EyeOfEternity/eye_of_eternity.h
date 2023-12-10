@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace EyeOfEternity
+{
 #define EoEScriptName "instance_eye_of_eternity"
-#define DataHeader "EOE"
+constexpr char const* DataHeader = "EOE";
 
 enum EOEInstanceData
 {
@@ -91,6 +93,7 @@ template <class AI, class T>
 inline AI* GetEyeOfEternityAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, EoEScriptName);
+}
 }
 
 #endif

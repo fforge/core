@@ -21,8 +21,11 @@
 #include "CreatureAIImpl.h"
 #include "Position.h"
 
+namespace Stonecore
+{
+
 #define SCScriptName "instance_stonecore"
-#define DataHeader "SC"
+constexpr char const* DataHeader = "SC";
 
 enum SCDataTypes
 {
@@ -126,5 +129,6 @@ inline AI* GetStonecoreAI(T* obj)
 }
 
 #define RegisterStonecoreCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetStonecoreAI)
+}
 
 #endif // DEF_STONECORE

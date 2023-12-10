@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Uldaman
+{
 #define UldamanScriptName "instance_uldaman"
-#define DataHeader "UD"
+constexpr char const* DataHeader = "UD";
 
 #define MAX_ENCOUNTER                   3
 
@@ -48,6 +50,7 @@ template <class AI, class T>
 inline AI* GetUldamanAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, UldamanScriptName);
+}
 }
 
 #endif

@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Nexus
+{
 #define NexusScriptName "instance_nexus"
-#define DataHeader "NEX"
+constexpr char const* DataHeader = "NEX";
 
 uint32 const EncounterCount = 5;
 
@@ -69,6 +71,7 @@ template <class AI, class T>
 inline AI* GetNexusAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, NexusScriptName);
+}
 }
 
 #endif

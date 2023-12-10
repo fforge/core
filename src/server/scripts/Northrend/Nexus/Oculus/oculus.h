@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Oculus
+{
 #define OculusScriptName "instance_oculus"
-#define DataHeader "OC"
+constexpr char const* DataHeader = "OC";
 
 uint32 const EncounterCount = 4;
 
@@ -111,6 +113,7 @@ template <class AI, class T>
 inline AI* GetOculusAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, OculusScriptName);
+}
 }
 
 #endif // OCULUS_H_

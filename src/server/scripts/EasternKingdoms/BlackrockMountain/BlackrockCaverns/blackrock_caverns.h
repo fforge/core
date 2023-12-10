@@ -21,8 +21,10 @@
 #include "CreatureAIImpl.h"
 #include "Position.h"
 
+namespace BlackrockCaverns
+{
 #define BCScriptName "instance_blackrock_caverns"
-#define DataHeader "BRC"
+constexpr char const* DataHeader = "BRC";
 
 uint32 const EncounterCount             = 5;
 
@@ -109,5 +111,6 @@ inline AI* GetBlackrockCavernsAI(T* obj)
 }
 
 #define RegisterBlackrockCavernsCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetBlackrockCavernsAI)
+}
 
 #endif // BLACKROCKCAVERNS_H_

@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace BloodFurnace
+{
 #define BFScriptName "instance_blood_furnace"
-#define DataHeader   "BF"
+constexpr char const* DataHeader = "BF";
 
 uint32 const EncounterCount = 3;
 
@@ -86,6 +88,7 @@ template <class AI, class T>
 inline AI* GetBloodFurnaceAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, BFScriptName);
+}
 }
 
 #endif // BLOOD_FURNACE_H_

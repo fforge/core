@@ -31,6 +31,8 @@ EndScriptData */
 #include "sunwell_plateau.h"
 #include "TemporarySummon.h"
 
+namespace SunwellPlateau::Felwyst
+{
 enum Yells
 {
     YELL_BIRTH                                    = 0,
@@ -222,7 +224,7 @@ public:
                     summon->CastSpell(summon, SPELL_FOG_CHARM, true);
                     summon->CastSpell(summon, SPELL_FOG_CHARM2, true);
                 }
-                Unit::DealDamage(me, unitCaster, unitCaster->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+                Unit::DealDamage(me, unitCaster, unitCaster->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
             }
         }
 
@@ -577,9 +579,12 @@ public:
         return GetSunwellPlateauAI<npc_felmyst_trailAI>(creature);
     }
 };
+}
 
 void AddSC_boss_felmyst()
 {
+    using namespace SunwellPlateau;
+    using namespace SunwellPlateau::Felwyst;
     new boss_felmyst();
     new npc_felmyst_vapor();
     new npc_felmyst_trail();

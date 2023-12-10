@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace RazorfenDowns
+{
 #define RFDScriptName "instance_razorfen_downs"
-#define DataHeader "RFD"
+constexpr char const* DataHeader = "RFD";
 
 uint32 const EncounterCount = 5;
 
@@ -67,6 +69,7 @@ template <class AI, class T>
 inline AI* GetRazorfenDownsAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, RFDScriptName);
+}
 }
 
 #endif

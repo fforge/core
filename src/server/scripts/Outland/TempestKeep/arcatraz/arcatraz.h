@@ -20,8 +20,11 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Arcatraz
+{
+
 #define ArcatrazScriptName "instance_arcatraz"
-#define DataHeader         "AZ"
+constexpr char const* DataHeader = "AZ";
 
 uint32 const EncounterCount = 4;
 
@@ -74,6 +77,7 @@ template <class AI, class T>
 inline AI* GetArcatrazAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, ArcatrazScriptName);
+}
 }
 
 #endif // ARCATRAZ_H

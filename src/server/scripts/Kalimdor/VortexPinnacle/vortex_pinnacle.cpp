@@ -30,12 +30,14 @@
 #include "Vehicle.h"
 #include "vortex_pinnacle.h"
 
-enum Texts
+namespace VortexPinnacle
+{
+enum VPTrashTexts
 {
     SAY_FEIGN_DEATH = 0
 };
 
-enum Spells
+enum VPTrashSpells
 {
     // Lurking Tempest
     SPELL_LIGHTNING_BOLT                = 89105,
@@ -72,7 +74,7 @@ enum Spells
     SPELL_ARCANE_BARRAGE                = 87845
 };
 
-enum Events
+enum VPTrashEvents
 {
     EVENT_NONE,
 
@@ -92,7 +94,7 @@ enum Events
     EVENT_EJECT_ALL_PASSENGERS
 };
 
-enum Points
+enum VPTrashPoints
 {
     POINT_NONE,
     POINT_RANDOM
@@ -872,9 +874,11 @@ public:
         return true;
     }
 };
+}
 
 void AddSC_vortex_pinnacle()
 {
+    using namespace VortexPinnacle;
     RegisterVortexPinnacleCreatureAI(npc_lurking_tempest);
     RegisterVortexPinnacleCreatureAI(npc_vp_howling_gale);
     RegisterVortexPinnacleCreatureAI(npc_slipstream);

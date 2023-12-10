@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace VaultOfArchavon
+{
 #define VoAScriptName "instance_vault_of_archavon"
-#define DataHeader "VA"
+constexpr char const* DataHeader = "VA";
 
 uint32 const EncounterCount = 4;
 
@@ -56,6 +58,7 @@ template <class AI, class T>
 inline AI* GetVaultOfArchavonAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, VoAScriptName);
+}
 }
 
 #endif

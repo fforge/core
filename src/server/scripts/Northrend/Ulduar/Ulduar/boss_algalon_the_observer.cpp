@@ -33,6 +33,8 @@
 #include "TemporarySummon.h"
 #include "ulduar.h"
 
+namespace Ulduar::AlgalonTheObserver
+{
 enum Texts
 {
     SAY_BRANN_ALGALON_INTRO_1       = 0,
@@ -1189,7 +1191,7 @@ class spell_algalon_collapse : public SpellScriptLoader
             void HandlePeriodic(AuraEffect const* /*aurEff*/)
             {
                 PreventDefaultAction();
-                Unit::DealDamage(GetTarget(), GetTarget(), GetTarget()->CountPctFromMaxHealth(1), nullptr, NODAMAGE);
+                Unit::DealDamage(GetTarget(), GetTarget(), GetTarget()->CountPctFromMaxHealth(1), 0, NODAMAGE);
             }
 
             void Register() override
@@ -1328,9 +1330,12 @@ class spell_algalon_cosmic_smash_damage : public SpellScriptLoader
             return new spell_algalon_cosmic_smash_damage_SpellScript();
         }
 };
+}
 
 void AddSC_boss_algalon_the_observer()
 {
+    using namespace Ulduar;
+    using namespace Ulduar::AlgalonTheObserver;
     new boss_algalon_the_observer();
     new npc_living_constellation();
     new npc_collapsing_star();

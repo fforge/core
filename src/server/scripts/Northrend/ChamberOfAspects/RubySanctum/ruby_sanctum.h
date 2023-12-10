@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace RubySanctum
+{
 #define RSScriptName "instance_ruby_sanctum"
-#define DataHeader "RS"
+constexpr char const* DataHeader = "RS";
 
 uint32 const EncounterCount = 4;
 
@@ -133,6 +135,7 @@ template <class AI, class T>
 inline AI* GetRubySanctumAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, RSScriptName);
+}
 }
 
 #endif // RUBY_SANCTUM_H_

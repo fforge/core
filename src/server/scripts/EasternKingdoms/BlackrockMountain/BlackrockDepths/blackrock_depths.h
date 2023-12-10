@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace BlackrockDepths
+{
 #define BRDScriptName "instance_blackrock_depths"
-#define DataHeader "BRD"
+constexpr char const* DataHeader = "BRD";
 
 enum BRDFactionIds
 {
@@ -70,6 +72,7 @@ template <class AI, class T>
 inline AI* GetBlackrockDepthsAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, BRDScriptName);
+}
 }
 
 #endif

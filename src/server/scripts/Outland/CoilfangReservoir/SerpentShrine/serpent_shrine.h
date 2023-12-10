@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace SerpentShrine
+{
 #define SSCScriptName "instance_serpent_shrine"
-#define DataHeader "SS"
+constexpr char const* DataHeader = "SS";
 
 enum SSWaterEventState
 {
@@ -63,6 +65,7 @@ template <class AI, class T>
 inline AI* GetSerpentshrineCavernAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, SSCScriptName);
+}
 }
 
 #endif

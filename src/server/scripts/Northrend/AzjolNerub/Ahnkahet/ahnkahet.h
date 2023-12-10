@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Ankahet
+{
 #define AhnKahetScriptName "instance_ahnkahet"
-#define DataHeader         "AK"
+constexpr char const* DataHeader = "AK";
 
 uint32 const EncounterCount = 5;
 
@@ -86,6 +88,7 @@ template <class AI, class T>
 inline AI* GetAhnKahetAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, AhnKahetScriptName);
+}
 }
 
 #endif // AHNKAHET_H_

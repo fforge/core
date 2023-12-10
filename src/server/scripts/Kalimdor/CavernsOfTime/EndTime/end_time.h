@@ -23,7 +23,9 @@
 
 class Creature;
 
-#define DataHeader "ET"
+namespace EndTime
+{
+constexpr char const* DataHeader = "ET";
 #define ETScriptName "instance_end_time"
 
 uint32 const EncounterCount = 5;
@@ -75,5 +77,6 @@ AI* GetEndTimeAI(Creature* creature)
 }
 
 #define RegisterEndTimeCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetEndTimeAI)
+}
 
 #endif // DEF_ENDTIME_H

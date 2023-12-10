@@ -20,7 +20,9 @@
 
 #include "CreatureAIImpl.h"
 
-#define DataHeader "BH"
+namespace BaradinHold
+{
+constexpr char const* DataHeader = "BH";
 #define BHScriptName "instance_baradin_hold"
 
 uint32 const EncounterCount = 3;
@@ -63,5 +65,6 @@ inline AI* GetBaradinHoldAI(T* obj)
 }
 
 #define RegisterBaradinHoldCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetBaradinHoldAI)
+}
 
 #endif

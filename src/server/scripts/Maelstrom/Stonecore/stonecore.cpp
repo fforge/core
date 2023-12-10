@@ -25,14 +25,17 @@
 #include "SpellScript.h"
 #include "stonecore.h"
 
-enum Texts
+namespace Stonecore
+{
+
+enum MillhouseTexts
 {
     // Millhouse Manastorm
     SAY_MILLHOUSE_EVENT_1           = 0,
     SAY_MILLHOUSE_EVENT_2           = 1
 };
 
-enum Spells
+enum MillhouseSpells
 {
     // Millhouse Manastorm
     SPELL_SHADOW_BOLT                     = 81439,
@@ -50,7 +53,7 @@ enum Spells
 //  SPELL_PORTAL_VISUAL                   = 79754,
 };
 
-enum Events
+enum MillhouseEvents
 {
     // Millhouse Manastorm
     EVENT_FROSTBOLT_VOLLEY = 1,
@@ -62,7 +65,7 @@ enum Events
     EVENT_RUN_AWAY
 };
 
-enum MovementPoints
+enum MillhouseCMovementPoints
 {
     POINT_NONE,
 
@@ -419,9 +422,11 @@ public:
         return true;
     }
 };
+}
 
 void AddSC_stonecore()
 {
+    using namespace Stonecore;
     new npc_sc_millhouse_manastorm();
     new spell_force_of_earth();
     new spell_sc_anchor_here();

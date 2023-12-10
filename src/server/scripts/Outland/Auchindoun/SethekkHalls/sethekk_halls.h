@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace SethekkHalls
+{
 #define SHScriptName "instance_sethekk_halls"
-#define DataHeader "SH"
+constexpr char const* DataHeader = "SH";
 
 uint32 const EncounterCount             = 3;
 
@@ -52,6 +54,7 @@ template <class AI, class T>
 inline AI* GetSethekkHallsAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, SHScriptName);
+}
 }
 
 #endif // SETHEKK_HALLS_H_

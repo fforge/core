@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace BlackfathomDeeps
+{
 #define BFDScriptName "instance_blackfathom_deeps"
-#define DataHeader "BFD"
+constexpr char const* DataHeader = "BFD";
 
 uint32 const EncounterCount = 3;
 
@@ -74,6 +76,7 @@ template <class AI, class T>
 inline AI* GetBlackfathomDeepsAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, BFDScriptName);
+}
 }
 
 #endif // BFD_H_

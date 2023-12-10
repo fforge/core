@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace RuinsOfAhnQiraj
+{
 #define AQ20ScriptName "instance_ruins_of_ahnqiraj"
-#define DataHeader "AQR"
+constexpr char const* DataHeader = "AQR";
 
 enum AQRDataTypes
 {
@@ -64,6 +66,7 @@ template <class AI, class T>
 inline AI* GetAQ20AI(T* obj)
 {
     return GetInstanceAI<AI>(obj, AQ20ScriptName);
+}
 }
 
 #endif

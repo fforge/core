@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace TempleOfAhnqiraj
+{
 #define AQ40ScriptName "instance_temple_of_ahnqiraj"
-#define DataHeader "AQT"
+constexpr char const* DataHeader = "AQT";
 
 uint32 const EncounterCount = 9;
 
@@ -98,5 +100,6 @@ inline AI* GetAQ40AI(T* obj)
 }
 
 #define RegisterTempleOfAhnqirajhCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetAQ40AI)
+}
 
 #endif

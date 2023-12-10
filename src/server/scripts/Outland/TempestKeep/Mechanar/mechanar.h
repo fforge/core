@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace Mechanar
+{
 #define MechanarScriptName "instance_mechanar"
-#define DataHeader "MR"
+constexpr char const* DataHeader = "MR";
 
 uint32 const EncounterCount             = 5;
 
@@ -45,6 +47,7 @@ template <class AI, class T>
 inline AI* GetMechanarAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, MechanarScriptName);
+}
 }
 
 #endif

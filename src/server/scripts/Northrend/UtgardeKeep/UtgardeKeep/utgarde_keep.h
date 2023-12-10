@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace UtgardeKeep
+{
 #define UKScriptName "instance_utgarde_keep"
-#define DataHeader "UK"
+constexpr char const* DataHeader = "UK";
 
 uint32 const EncounterCount = 3;
 
@@ -91,6 +93,7 @@ template <class AI, class T>
 inline AI* GetUtgardeKeepAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, UKScriptName);
+}
 }
 
 #endif // UTGARDE_KEEP_H_

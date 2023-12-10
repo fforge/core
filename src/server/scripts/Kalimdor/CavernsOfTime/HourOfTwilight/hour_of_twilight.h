@@ -21,7 +21,9 @@
 #include "CreatureAIImpl.h"
 #include "Define.h"
 
-#define DataHeader "HOT"
+namespace HourOfTwilight
+{
+constexpr char const* DataHeader = "HOT";
 #define HOTScriptName "instance_hour_of_twilight"
 
 uint32 const EncounterCount = 3;
@@ -49,5 +51,6 @@ AI* GetHourOfTwilightAI(Creature* creature)
 }
 
 #define RegisterHourOfTwilightCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetHourOfTwilightAI)
+}
 
 #endif // DEF_HOUROFTWILIGHT_H

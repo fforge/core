@@ -21,8 +21,10 @@
 #include "CreatureAIImpl.h"
 #include "Position.h"
 
+namespace ThroneOfTheTides
+{
 #define TotTScriptName "instance_throne_of_the_tides"
-#define DataHeader "TOTT"
+constexpr char const* DataHeader = "TOTT";
 
 uint32 const EncounterCount = 4;
 
@@ -242,5 +244,6 @@ inline AI* GetThroneOfTheTodesAI(T* obj)
 }
 
 #define RegisterThroneOfTheTidesCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetThroneOfTheTodesAI)
+}
 
 #endif // THRONEOFTHETIDES_H_

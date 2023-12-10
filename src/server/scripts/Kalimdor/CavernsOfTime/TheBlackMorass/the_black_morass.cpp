@@ -26,6 +26,8 @@
 #include "SpellInfo.h"
 #include "the_black_morass.h"
 
+namespace TheBlackMorass
+{
 enum MedivhBm
 {
     SAY_ENTER               = 0,                    //where does this belong?
@@ -233,12 +235,12 @@ public:
     }
 };
 
-struct Wave
+struct PortalWave
 {
     uint32 PortalMob[4];                                    //spawns for portal waves (in order)
 };
 
-static Wave PortalWaves[]=
+static PortalWave PortalWaves[]=
 {
     { {NPC_INFINITE_ASSASIN, NPC_INFINITE_WHELP, NPC_INFINITE_CRONOMANCER, 0} },
     { {NPC_INFINITE_EXECUTIONER, NPC_INFINITE_CRONOMANCER, NPC_INFINITE_WHELP, NPC_INFINITE_ASSASIN} },
@@ -351,9 +353,11 @@ public:
         return GetBlackMorassAI<npc_time_riftAI>(creature);
     }
 };
+}
 
 void AddSC_the_black_morass()
 {
+    using namespace TheBlackMorass;
     new npc_medivh_bm();
     new npc_time_rift();
 }

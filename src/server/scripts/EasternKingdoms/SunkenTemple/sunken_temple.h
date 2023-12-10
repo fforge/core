@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace SunkenTemple
+{
 #define STScriptName "instance_sunken_temple"
-#define DataHeader "ST"
+constexpr char const* DataHeader = "ST";
 
 enum STEvents
 {
@@ -32,6 +34,7 @@ template <class AI, class T>
 inline AI* GetSunkenTempleAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, STScriptName);
+}
 }
 
 #endif

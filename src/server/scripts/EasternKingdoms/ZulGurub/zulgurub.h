@@ -20,9 +20,11 @@
 
 #include "CreatureAIImpl.h"
 
-#define DataHeader "ZG"
+constexpr char const* DataHeader = "ZG";
 #define ZGScriptName "instance_zulgurub"
 
+namespace ZulGurub
+{
 uint32 const EncounterCount = 5;
 
 enum ZGDataTypes
@@ -151,5 +153,6 @@ inline AI* GetZulGurubAI(T* obj)
 }
 
 #define RegisterZulGurubCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetZulGurubAI)
+}
 
 #endif

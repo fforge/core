@@ -20,8 +20,10 @@
 
 #include "CreatureAIImpl.h"
 
+namespace ForgeOfSouls
+{
 #define FoSScriptName "instance_forge_of_souls"
-#define DataHeader    "FOS"
+constexpr char const* DataHeader = "FOS";
 
 uint32 const EncounterCount = 2;
 
@@ -61,6 +63,7 @@ template <class AI, class T>
 inline AI* GetForgeOfSoulsAI(T* obj)
 {
     return GetInstanceAI<AI>(obj, FoSScriptName);
+}
 }
 
 #endif // FORGE_OF_SOULS_H_
