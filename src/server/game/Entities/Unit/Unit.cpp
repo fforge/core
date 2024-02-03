@@ -1903,17 +1903,37 @@ static float GetArmorReduction(float armor, uint8 attackerLevel)
 // Calculates the normalized rage amount per weapon swing
 inline static uint32 CalcMeleeAttackRageGain(Unit const* attacker, Unit const* victim, WeaponAttackType attType)
 {
-    uint32 rage = uint32((float)attacker->GetAttackTime(attType) / 1000 * 6.5f);
+    float attackDelay = [&]()
+    {
+        if (Player const* playerAttacker = attacker->ToPlayer())
+        {
+            if (!playerAttacker->IsInFeralForm())
+            {
+                Item const* weapon = playerAttacker->GetWeaponForAttack(attType);
+                if (weapon)
+                    return static_cast<float>(weapon->GetTemplate()->GetDelay());
+            }
+            else if (SpellShapeshiftFormEntry const* shapeShiftFormEntry = sSpellShapeshiftFormStore.LookupEntry(playerAttacker->GetShapeshiftForm()))
+                return static_cast<float>(shapeShiftFormEntry->CombatRoundTime);
+        }
+        else if (Creature const* creature = attacker->ToCreature())
+            return static_cast<float>(creature->GetCreatureTemplate()->BaseAttackTime);
+
+        return 0.f;
+
+    }();
+
+    uint32 rageAmount = attackDelay / 1000 * 6.5f;
 
     // Sentinel
     if (victim->GetVictim() && victim->GetVictim() != attacker)
         if (AuraEffect* aurEff = attacker->GetAuraEffect(SPELL_AURA_DUMMY, SPELLFAMILY_GENERIC, 1916, EFFECT_1))
-            rage += CalculatePct(rage, aurEff->GetAmount());
+            rageAmount += CalculatePct(rageAmount, aurEff->GetAmount());
 
     if (attType == OFF_ATTACK)
-        rage *= 0.5f;
+        rageAmount *= 0.5f;
 
-    return rage;
+    return rageAmount;
 }
 
 void Unit::AttackerStateUpdate(Unit* victim, WeaponAttackType attType, bool extra)
@@ -5209,7 +5229,7 @@ void Unit::SetPowerType(Powers new_powertype)
     }
 }
 
-void Unit::UpdateDisplayPower()
+Powers Unit::CalculateDisplayPowerType() const
 {
     Powers displayPower = POWER_MANA;
     switch (GetShapeshiftForm())
@@ -5227,34 +5247,34 @@ void Unit::UpdateDisplayPower()
             break;
         default:
         {
-            if (GetTypeId() == TYPEID_PLAYER)
+            ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(getClass());
+            if (cEntry && cEntry->DisplayPower < MAX_POWERS)
+                displayPower = Powers(cEntry->DisplayPower);
+
+            if (Vehicle* vehicle = GetVehicleKit())
             {
-                ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(getClass());
-                if (cEntry && cEntry->DisplayPower < MAX_POWERS)
-                    displayPower = Powers(cEntry->DisplayPower);
+                if (PowerDisplayEntry const* powerDisplay = sPowerDisplayStore.LookupEntry(vehicle->GetVehicleInfo()->PowerDisplayID[0])) // To-do: 4.x has 3 power display id fields.
+                    displayPower = Powers(powerDisplay->ActualType);
+                else if (getClass() == CLASS_ROGUE)
+                    displayPower = POWER_ENERGY;
             }
-            else if (GetTypeId() == TYPEID_UNIT)
+            else if (Pet const* pet = ToPet())
             {
-                if (Vehicle* vehicle = GetVehicleKit())
-                {
-                    if (PowerDisplayEntry const* powerDisplay = sPowerDisplayStore.LookupEntry(vehicle->GetVehicleInfo()->PowerDisplayID[0])) // To-do: 4.x has 3 power display id fields.
-                        displayPower = Powers(powerDisplay->ActualType);
-                    else if (getClass() == CLASS_ROGUE)
-                        displayPower = POWER_ENERGY;
-                }
-                else if (Pet* pet = ToPet())
-                {
-                    if (pet->getPetType() == HUNTER_PET) // Hunter pets have focus
-                        displayPower = POWER_FOCUS;
-                    else if (pet->IsPetGhoul() || pet->IsRisenAlly()) // DK pets have energy
-                        displayPower = POWER_ENERGY;
-                }
+                if (pet->getPetType() == HUNTER_PET) // Hunter pets have focus
+                    displayPower = POWER_FOCUS;
+                else if (pet->IsPetGhoul() || pet->IsRisenAlly()) // DK pets have energy
+                    displayPower = POWER_ENERGY;
             }
             break;
         }
     }
 
-    SetPowerType(displayPower);
+    return displayPower;
+}
+
+void Unit::UpdateDisplayPower()
+{
+    SetPowerType(CalculateDisplayPowerType());
 }
 
 void Unit::SetSheath(SheathState sheathed)
@@ -9349,39 +9369,6 @@ void Unit::SetMaxPower(Powers power, int32 val)
         SetPower(power, val);
 }
 
-int32 Unit::GetCreatePowers(Powers power) const
-{
-    switch (power)
-    {
-        case POWER_MANA:
-            return GetCreateMana();
-        case POWER_RAGE:
-            return 1000;
-        case POWER_FOCUS:
-            if (GetTypeId() == TYPEID_PLAYER && getClass() == CLASS_HUNTER)
-                return 100;
-            return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->IsPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : 100);
-        case POWER_ENERGY:
-            return 100;
-        case POWER_RUNIC_POWER:
-            return 1000;
-        case POWER_RUNE:
-            return 0;
-        case POWER_SOUL_SHARDS:
-            return 3;
-        case POWER_ECLIPSE:
-            return 100;
-        case POWER_HOLY_POWER:
-            return 3;
-        case POWER_HEALTH:
-            return 0;
-        default:
-            break;
-    }
-
-    return 0;
-}
-
 void Unit::Regenerate(Powers powerType, uint32 diff)
 {
     uint32 maxValue = GetMaxPower(powerType);
@@ -13454,7 +13441,7 @@ int32 Unit::RewardRage(uint32 baseRage, bool attacker)
     }
 
     addRage *= sWorld->getRate(RATE_POWER_RAGE_INCOME);
-    return ModifyPower(POWER_RAGE, static_cast<uint32>(std::ceil(addRage) * 10), !attacker);
+    return ModifyPower(POWER_RAGE, static_cast<uint32>(std::ceil(addRage) * 10), false);
 }
 
 void Unit::StopAttackFaction(uint32 faction_id)
@@ -13644,6 +13631,7 @@ void Unit::SetFacingTo(float ori, bool force)
         init.DisableTransportPathTransformations(); // It makes no sense to target global orientation
     init.SetFacing(ori);
     init.Launch();
+    UpdateSplineMovement(1);
 }
 
 void Unit::SetFacingToObject(WorldObject const* object, bool force)
@@ -13657,6 +13645,7 @@ void Unit::SetFacingToObject(WorldObject const* object, bool force)
     init.MoveTo(GetPositionX(), GetPositionY(), GetPositionZ(), false);
     init.SetFacing(GetAngle(object));   // when on transport, GetAngle will still return global coordinates (and angle) that needs transforming
     init.Launch();
+    UpdateSplineMovement(1);
 }
 
 void Unit::SetFacingToPoint(Position const& point, bool force)
@@ -13672,6 +13661,7 @@ void Unit::SetFacingToPoint(Position const& point, bool force)
         init.DisableTransportPathTransformations(); // It makes no sense to target global orientation
     init.SetFacing(point.GetPositionX(), point.GetPositionY(), point.GetPositionZ());
     init.Launch();
+    UpdateSplineMovement(1);
 }
 
 bool Unit::SetWalk(bool enable)
